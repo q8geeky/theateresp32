@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Layers, Play, Settings, Cpu } from 'lucide-react';
+import { Home, Layers, Play, Settings, Cpu, Mic2 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
   const navItems = [
@@ -14,7 +14,7 @@ const Sidebar: React.FC = () => {
   return (
     <div className="bg-primary-800 text-white w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out">
       <div className="flex items-center justify-center space-x-2 px-4">
-        <Layers className="h-8 w-8" />
+        <Mic2 className="h-8 w-8" />
         <span className="text-2xl font-extrabold">Stage Control</span>
       </div>
       <nav>

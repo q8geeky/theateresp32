@@ -1,143 +1,204 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { Device, Pin } from '../../types';
+import axios from 'axios';
+import { Device, DevicesState } from '../../types';
+import { RootState } from '..';
 
-interface DeviceState {
-  devices: Record<string, Device>;
-  isLoading: boolean;
-  error: string | null;
-  selectedDeviceId: string | null;
-}
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-// Mock API for device discovery - replace with actual implementation
-const mockDiscoverDevices = async (): Promise<Device[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        {
-          id: 'device1',
-          name: 'Stage Left Lights',
-          ip: '192.168.1.100',
-          mac: 'AA:BB:CC:DD:EE:FF',
-          lastSeen: new Date().toISOString(),
-          online: true,
-          pins: {
-            'pin1': {
-              id: 'pin1',
-              name: 'RGB Strip 1',
-              type: 'RGB',
-              value: '#ff0000',
-            },
-            'pin2': {
-              id: 'pin2',
-              name: 'Servo Motor',
-              type: 'Servo',
-              value: 90,
-            },
-          },
-        },
-        {
-          id: 'device2',
-          name: 'Stage Right Lights',
-          ip: '192.168.1.101',
-          mac: 'FF:EE:DD:CC:BB:AA',
-          lastSeen: new Date().toISOString(),
-          online: true,
-          pins: {
-            'pin1': {
-              id: 'pin1',
-              name: 'RGB Strip 2',
-              type: 'RGB',
-              value: '#00ff00',
-            },
-            'pin2': {
-              id: 'pin2',
-              name: 'Relay',
-              type: 'Relay',
-              value: false,
-            },
-          },
-        },
-      ]);
-    }, 1500);
-  });
-};
+// Mock data for development
+const mockDevices: Device[] = [
+  {
+    id: '1',
+    name: 'Backstage RGB',
+    ip: '192.168.1.101',
+    mac: '00:11:22:33:44:55',
+    online: true,
+    lastSeen: new Date().toISOString(),
+    pins: {
+      'D9': { type: 'RGB', label: 'RGB Strip' },
+      'D6': { type: 'Servo', label: 'Main Curtain' },
+      'D4': { type: 'Relay', label: 'Fog Machine' }
+    }
+  },
+  {
+    id: '2',
+    name: 'Stage Left',
+    ip: '192.168.1.102',
+    mac: '00:11:22:33:44:56',
+    online: true,
+    lastSeen: new Date().toISOString(),
+    pins: {
+      'D2': { type: 'LED', label: 'Spotlight' },
+      'D3': { type: 'Sensor', label: 'Motion Detector' }
+    }
+  },
+  {
+    id: '3',
+    name: 'Stage Right',
+    ip: '192.168.1.103',
+    mac: '00:11:22:33:44:57',
+    online: false,
+    lastSeen: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+    pins: {
+      'D5': { type: 'RGB', label: 'Ambient Light' },
+      'D7': { type: 'Servo', label: 'Prop Rotation' }
+    }
+  }
+];
 
-// Mock API for controlling a device pin
-const mockControlPin = async (
-  deviceId: string,
-  pinId: string,
-  value: any
-): Promise<{ deviceId: string; pinId: string; value: any }> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ deviceId, pinId, value });
-    }, 300);
-  });
-};
+export const fetchDeviceById = createAsyncThunk(
+  'devices/fetchById',
+  async (deviceId: string, { getState, rejectWithValue }) => {
+    try {
+      // In a real app, this would be an API call to fetch a specific device
+      // For now, we'll find it in our mock data
+      const device = mockDevices.find(d => d.id === deviceId);
+      if (!device) {
+        return rejectWithValue('Device not found');
+      }
+      return device;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to fetch device');
+    }
+  }
+);
 
 export const discoverDevices = createAsyncThunk(
   'devices/discover',
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const devices = await mockDiscoverDevices();
-      return devices;
+      // In a real app, this would be an API call to discover devices on the network
+      // For now, we'll return mock data
+      return mockDevices;
     } catch (error) {
-      return rejectWithValue((error as Error).message);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to discover devices');
     }
   }
 );
 
-export const controlPin = createAsyncThunk(
-  'devices/controlPin',
+export const updateDevice = createAsyncThunk(
+  'devices/update',
+  async (device: Device, { getState, rejectWithValue }) => {
+    try {
+      // In a real app, this would be an API call to update the device
+      // For now, we'll just return the updated device
+      return device;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to update device');
+    }
+  }
+);
+
+export const updateDevicePin = createAsyncThunk(
+  'devices/updatePin',
   async (
     { deviceId, pinId, value }: { deviceId: string; pinId: string; value: any },
-    { rejectWithValue }
+    { getState, rejectWithValue }
   ) => {
     try {
-      const result = await mockControlPin(deviceId, pinId, value);
-      return result;
+      // In a real app, this would be an API call to update a specific pin on a device
+      return { deviceId, pinId, value };
     } catch (error) {
-      return rejectWithValue((error as Error).message);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to update pin');
     }
   }
 );
 
-const initialState: DeviceState = {
+export const addDevicePin = createAsyncThunk(
+  'devices/addPin',
+  async (
+    { deviceId, pinData }: { deviceId: string; pinData: { id: string; type: string; label: string } },
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      // In a real app, this would be an API call to add a new pin to a device
+      return { deviceId, pinData };
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to add pin');
+    }
+  }
+);
+
+// Adding the missing removeDevicePin function
+export const removeDevicePin = createAsyncThunk(
+  'devices/removePin',
+  async (
+    { deviceId, pinId }: { deviceId: string; pinId: string },
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      // In a real app, this would be an API call to remove a pin from a device
+      return { deviceId, pinId };
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to remove pin');
+    }
+  }
+);
+
+export const sendCommand = createAsyncThunk(
+  'devices/sendCommand',
+  async (
+    { deviceId, pinId, command }: { deviceId: string; pinId: string; command: any },
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      const state = getState() as RootState;
+      const device = state.devices.devices[deviceId];
+      
+      if (!device) {
+        return rejectWithValue('Device not found');
+      }
+      
+      // In a real app, this would be a WebSocket or HTTP request to the device
+      console.log(`Sending command to ${device.name} (${device.ip}): ${JSON.stringify(command)}`);
+      
+      // Mock successful response
+      return {
+        deviceId,
+        pinId,
+        success: true,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to send command');
+    }
+  }
+);
+
+const initialState: DevicesState = {
   devices: {},
   isLoading: false,
-  error: null,
-  selectedDeviceId: null,
+  error: null
 };
 
 const deviceSlice = createSlice({
   name: 'devices',
   initialState,
   reducers: {
-    selectDevice: (state, action: PayloadAction<string>) => {
-      state.selectedDeviceId = action.payload;
-    },
-    clearDeviceSelection: (state) => {
-      state.selectedDeviceId = null;
-    },
-    updateDeviceStatus: (state, action: PayloadAction<{ deviceId: string; online: boolean }>) => {
-      const { deviceId, online } = action.payload;
-      if (state.devices[deviceId]) {
-        state.devices[deviceId].online = online;
-        state.devices[deviceId].lastSeen = online ? new Date().toISOString() : state.devices[deviceId].lastSeen;
-      }
-    },
-    renameDevice: (state, action: PayloadAction<{ deviceId: string; name: string }>) => {
-      const { deviceId, name } = action.payload;
-      if (state.devices[deviceId]) {
-        state.devices[deviceId].name = name;
-      }
-    },
-    renamePin: (state, action: PayloadAction<{ deviceId: string; pinId: string; name: string }>) => {
-      const { deviceId, pinId, name } = action.payload;
-      if (state.devices[deviceId]?.pins[pinId]) {
-        state.devices[deviceId].pins[pinId].name = name;
-      }
-    },
+    clearError: (state) => {
+      state.error = null;
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -145,8 +206,9 @@ const deviceSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(discoverDevices.fulfilled, (state, action: PayloadAction<Device[]>) => {
+      .addCase(discoverDevices.fulfilled, (state, action) => {
         state.isLoading = false;
+        // Convert array to object with id as key
         const devicesMap: Record<string, Device> = {};
         action.payload.forEach((device) => {
           devicesMap[device.id] = device;
@@ -157,21 +219,55 @@ const deviceSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      .addCase(controlPin.fulfilled, (state, action) => {
+      .addCase(fetchDeviceById.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchDeviceById.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const device = action.payload;
+        state.devices[device.id] = device;
+      })
+      .addCase(fetchDeviceById.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(updateDevice.fulfilled, (state, action) => {
+        const device = action.payload;
+        state.devices[device.id] = device;
+      })
+      .addCase(updateDevicePin.fulfilled, (state, action) => {
         const { deviceId, pinId, value } = action.payload;
-        if (state.devices[deviceId]?.pins[pinId]) {
+        if (state.devices[deviceId] && state.devices[deviceId].pins[pinId]) {
           state.devices[deviceId].pins[pinId].value = value;
         }
+      })
+      .addCase(addDevicePin.fulfilled, (state, action) => {
+        const { deviceId, pinData } = action.payload;
+        if (state.devices[deviceId]) {
+          state.devices[deviceId].pins[pinData.id] = {
+            type: pinData.type,
+            label: pinData.label,
+            value: null
+          };
+        }
+      })
+      .addCase(removeDevicePin.fulfilled, (state, action) => {
+        const { deviceId, pinId } = action.payload;
+        if (state.devices[deviceId] && state.devices[deviceId].pins[pinId]) {
+          const updatedPins = { ...state.devices[deviceId].pins };
+          delete updatedPins[pinId];
+          state.devices[deviceId] = {
+            ...state.devices[deviceId],
+            pins: updatedPins
+          };
+        }
+      })
+      .addCase(sendCommand.rejected, (state, action) => {
+        state.error = action.payload as string;
       });
-  },
+  }
 });
 
-export const {
-  selectDevice,
-  clearDeviceSelection,
-  updateDeviceStatus,
-  renameDevice,
-  renamePin,
-} = deviceSlice.actions;
-
+export const { clearError } = deviceSlice.actions;
 export default deviceSlice.reducer;

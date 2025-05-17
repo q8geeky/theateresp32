@@ -86,13 +86,13 @@ const cueSlice = createSlice({
     addCueAction: (state, action: PayloadAction<{ 
       cueId: string; 
       blockId: string; 
-      action: CueAction 
+      cueAction: CueAction 
     }>) => {
-      const { cueId, blockId, action } = action.payload;
+      const { cueId, blockId, cueAction } = action.payload;
       if (state.cues[cueId]) {
         const blockIndex = state.cues[cueId].blocks.findIndex(b => b.id === blockId);
         if (blockIndex !== -1) {
-          state.cues[cueId].blocks[blockIndex].actions.push(action);
+          state.cues[cueId].blocks[blockIndex].actions.push(cueAction);
         }
       }
     },

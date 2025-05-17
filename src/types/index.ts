@@ -1,51 +1,72 @@
-// Device Types
-export interface Pin {
+export interface User {
   id: string;
-  name: string;
-  type: 'RGB' | 'Servo' | 'Relay' | 'Digital' | 'PWM' | 'Analog';
-  value: any;
+  username: string;
+  role: 'admin' | 'user';
+}
+
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
 }
 
 export interface Device {
   id: string;
   name: string;
   ip: string;
-  mac?: string;
-  lastSeen: string;
+  mac: string;
   online: boolean;
-  pins: Record<string, Pin>;
+  lastSeen: string;
+  pins: Record<string, PinConfig>;
 }
 
-// Workspace Types
-export interface ControlPosition {
-  x: number;
-  y: number;
+export interface PinConfig {
+  type: 'RGB' | 'LED' | 'Servo' | 'Relay' | 'Sensor' | 'Custom';
+  label?: string;
+  value?: any;
+}
+
+export interface DevicesState {
+  devices: Record<string, Device>;
+  isLoading: boolean;
+  error: string | null;
 }
 
 export interface Control {
   id: string;
-  type: 'button' | 'slider' | 'colorPicker' | 'toggle';
+  type: 'toggle' | 'slider' | 'colorPicker' | 'pattern' | 'servoControl' | 'script' | 'cueTrigger';
   deviceId: string;
   pinId: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
   label: string;
-  position: ControlPosition;
-  style?: Record<string, any>;
+  value: any;
+  config?: any;
 }
 
-// Cue Types
-export interface CueAction {
-  id: string;
-  deviceId: string;
-  pinId: string;
-  value: any;
+export interface WorkspaceState {
+  controls: Control[];
+  selectedControlId?: string;
+  isLoading: boolean;
+  error: string | null;
 }
 
 export interface CueBlock {
   id: string;
   name: string;
-  triggerTime: number; // ms from start
-  duration: number; // ms
+  startTime: number;
+  duration: number;
   actions: CueAction[];
+}
+
+export interface CueAction {
+  deviceId: string;
+  pinId: string;
+  type: string;
+  value: any;
+  delay?: number;
 }
 
 export interface Cue {
@@ -55,17 +76,32 @@ export interface Cue {
   totalDuration: number;
 }
 
-// Auth Types
-export interface User {
-  id: string;
-  username: string;
-  email?: string;
-  role: 'admin' | 'user';
+export interface CuesState {
+  cues: Record<string, Cue>;
+  activeCueId?: string;
+  isPlaying: boolean;
+  currentTime: number;
+  isLoading: boolean;
+  error: string | null;
 }
 
-export interface AuthState {
-  isAuthenticated: boolean;
+export interface Script {
+  id: string;
+  name: string;
+  code: string;
+  deviceId?: string;
+}
+
+export interface ScriptsState {
+  scripts: Record<string, Script>;
   isLoading: boolean;
-  user: User | null;
   error: string | null;
+}
+
+export interface AppState {
+  auth: AuthState;
+  devices: DevicesState;
+  workspace: WorkspaceState;
+  cues: CuesState;
+  scripts: ScriptsState;
 }
